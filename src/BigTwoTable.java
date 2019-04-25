@@ -52,7 +52,7 @@ public class BigTwoTable implements CardGameTable {
      * 
      * @param bigtwo BigTwo object of BigTwo
      */
-    BigTwoTable(BigTwo bigTwo) {
+    BigTwoTable(BigTwoClient bigTwo) {
         this.game = bigTwo;
         initImg();
         layout();
