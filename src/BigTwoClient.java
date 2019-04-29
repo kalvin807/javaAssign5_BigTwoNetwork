@@ -1,4 +1,5 @@
 import java.io.ObjectOutputStream;
+import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -130,16 +131,51 @@ public class BigTwoClient implements CardGame, NetworkGame {
         try {
             this.sock = new Socket(serverIP, serverPort);
         } catch (Exception e) {
-            table.printMsg("Failed to connect to socket!!!");
+            e.printStackTrace();
+            table.printMsg("Failed to create Socket");
         }
+        try{
+            oos = new ObjectOutputStream(sock.getOutputStream());
+        } catch (Exception e){
+            e.printStackTrace();
+            table.printMsg("Failed to create OOS");
+        }
+        Thread threadedServer = new Thread(new ServerHandler(sock));
+        threadedServer.start();
+        sendMessage(new CardGameMessage(1, -1, getPlayerName()));  
+        sendMessage(new CardGameMessage(4, -1, null));
     }
 
-    public void parseMessage(GameMessage message){
+    public void parseMessage(GameMessage message) {
 
     }
 
-    public void sendMessage(GameMessage message){
+    public void sendMessage(GameMessage message) {
 
+    }
+
+    class ServerHandler implements Runnable {
+        private Socket sock;
+        private ObjectInputStream ois;
+
+        ServerHandler(Socket sock) {
+            this.sock = sock;
+            try {
+                ois = new ObjectInputStream(sock.getInputStream());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void run() {
+            CardGameMessage message;
+            try {
+                while ((message = (CardGameMessage) ois.readObject()) != null)
+                    parseMessage(message);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -262,12 +298,6 @@ public class BigTwoClient implements CardGame, NetworkGame {
             }
         }
         return false;
-    }
-
-    class ServerHandler implements Runnable{
-        public void run(){
-
-        }
     }
 
     /**
