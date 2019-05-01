@@ -1,10 +1,9 @@
-@SuppressWarnings("serial")
+
 /**
  * A subclass of the Hand class, and are used to model a hand of flush in a Big
  * Two card game.
  */
 public class Flush extends Hand {
-
     /** A constructor for building a flush hand */
     public Flush(CardGamePlayer player, CardList cards) {
         super(player, cards);

@@ -1,4 +1,4 @@
-@SuppressWarnings("serial")
+
 /**
  * A subclass of the Hand class, and are used to model a hand of pair in a Big
  * Two card game.
@@ -8,7 +8,6 @@ public class Pair extends Hand {
     public Pair(CardGamePlayer player, CardList cards) {
         super(player, cards);
     }
-
     /**
      * A method for checking if this is a valid hand.
      * 

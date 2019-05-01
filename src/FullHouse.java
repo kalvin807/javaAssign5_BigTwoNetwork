@@ -1,4 +1,4 @@
-@SuppressWarnings("serial")
+
 
 /**
  * A subclass of the Hand class, and are used to model a hand of full house in a
@@ -6,7 +6,6 @@
  */
 
 public class FullHouse extends Hand {
-
     /** A constructor for building a full house hand */
     public FullHouse(CardGamePlayer player, CardList cards) {
         super(player, cards);
@@ -20,10 +19,9 @@ public class FullHouse extends Hand {
 
     @Override
     public Card getTopCard() {
-        if (getCard(1).compareTo(getCard(2)) == 0)
+        if ((getCard(0).compareTo(getCard(1)) == 0) && (getCard(0).compareTo(getCard(2)) == 0)) {
             return getCard(0);
-        else
-            return getCard(4);
+        }else return getCard(4);
     }
 
     /**
@@ -36,7 +34,9 @@ public class FullHouse extends Hand {
     public boolean beats(Hand hand) {
         if (size() == 5) {
             if (hand.getType() == "FullHouse") {
-                if (getTopCard().compareTo((((FullHouse) hand).getTopCard())) > 0)
+                Card topA = this.getTopCard();
+                Card topB = ((FullHouse) hand).getTopCard();
+                if (((BigTwoCard) topA).compareTo(topB) > 0)
                     return true;
                 else
                     return false;

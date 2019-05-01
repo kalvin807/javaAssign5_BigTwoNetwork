@@ -1,4 +1,4 @@
-@SuppressWarnings("serial")
+
 /**
  * The BigTwoDeck class is a subclass of the Deck class, and is used to model a
  * deck of cards used in a Big Two card game.

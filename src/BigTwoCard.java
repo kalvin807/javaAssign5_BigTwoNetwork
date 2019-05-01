@@ -1,4 +1,4 @@
-@SuppressWarnings("serial")
+
 /**
  * The BigTwoCard class is a subclass of the Card class, and is used to model a
  * card used in a Big Two card game.

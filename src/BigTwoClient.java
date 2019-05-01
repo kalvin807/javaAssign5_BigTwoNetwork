@@ -126,8 +126,8 @@ public class BigTwoClient implements CardGame, NetworkGame {
     }
 
     public void makeConnection() {
-        this.serverIP = "127.0.0.1";
-        this.serverPort = 2396;
+        table.connectPopup();
+        table.playerPopup();
         try {
             this.sock = new Socket(serverIP, serverPort);
         } catch (Exception e) {
@@ -144,6 +144,7 @@ public class BigTwoClient implements CardGame, NetworkGame {
         threadedServer.start();
         sendMessage(new CardGameMessage(CardGameMessage.JOIN, -1, getPlayerName()));
         sendMessage(new CardGameMessage(CardGameMessage.READY, -1, null));
+        table.repaint();
     }
 
     public synchronized void parseMessage(GameMessage message) {
@@ -160,29 +161,31 @@ public class BigTwoClient implements CardGame, NetworkGame {
         case CardGameMessage.JOIN:
             playerList.get(message.getPlayerID()).setName((String) message.getData());
             table.repaint();
-            table.printMsg((String) message.getData() + "joined the game.");
+            table.printMsg((String) message.getData() + " joined the game.");
             break;
         case CardGameMessage.FULL:
             table.printMsg("Server is currently FULLED");
             break;
         case CardGameMessage.QUIT:
-            table.printMsg(playerList.get(message.getPlayerID()).getName() + "left the game.");
+            table.printMsg(playerList.get(message.getPlayerID()).getName() + " left the game.");
             playerList.get(message.getPlayerID()).setName("");
             table.repaint();
             if (!endOfGame()) {
                 table.disable();
+                table.reset();
                 sendMessage(new CardGameMessage(4, -1, null));
             }
             break;
         case CardGameMessage.READY:
-            table.printMsg(playerList.get(message.getPlayerID()).getName() + "is ready.");
+            table.printMsg(playerList.get(message.getPlayerID()).getName() + " is ready.");
             break;
         case CardGameMessage.START:
-            table.printMsg("##Game Start##");
+            table.printMsg("All players are ready. Game Start!");
             start((BigTwoDeck) message.getData());
             break;
         case CardGameMessage.MOVE:
             checkMove(message.getPlayerID(), (int[]) message.getData());
+            table.repaint();
             break;
         case CardGameMessage.MSG:
             table.printChatMsg((String) message.getData());
@@ -249,9 +252,11 @@ public class BigTwoClient implements CardGame, NetworkGame {
         for (int i = 0; i < playerList.size(); i++)
             playerList.get(i).sortCardsInHand();
         // Refresh GUI
+        isFirst = true;
+        passCounter = 0;
         table.setActivePlayer(currentIdx);
         table.printMsg(" Player " + currentIdx + "'s turn:");
-        table.enable();
+        table.repaint();
     }
 
     /**
@@ -327,6 +332,8 @@ public class BigTwoClient implements CardGame, NetworkGame {
             else
                 table.printMsg("{" + hand.getType() + "} " + hand.toString() + " <== Not a legal move!!!");
         }
+        table.printMsg(getPlayerList().get(currentIdx).getName() + "'s turn:");
+        table.isWin = endOfGame() ? true : false;
     }
 
     /**
@@ -338,6 +345,7 @@ public class BigTwoClient implements CardGame, NetworkGame {
         for (int i = 0; i < 4; i++) {
             if (playerList.get(i).getNumOfCards() == 0) {
                 table.setActivePlayer(i);
+                table.winPopup();
                 return true;
             }
         }

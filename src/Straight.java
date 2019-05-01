@@ -1,10 +1,9 @@
-@SuppressWarnings("serial")
+
 /**
  * A subclass of the Hand class, and are used to model a hand of straight in a
  * Big Two card game.
  */
 public class Straight extends Hand {
-
     /** A constructor for building a straight hand */
     public Straight(CardGamePlayer player, CardList cards) {
         super(player, cards);
