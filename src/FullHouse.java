@@ -1,5 +1,4 @@
 
-
 /**
  * A subclass of the Hand class, and are used to model a hand of full house in a
  * Big Two card game.
@@ -19,9 +18,21 @@ public class FullHouse extends Hand {
 
     @Override
     public Card getTopCard() {
-        if ((getCard(0).compareTo(getCard(1)) == 0) && (getCard(0).compareTo(getCard(2)) == 0)) {
-            return getCard(0);
-        }else return getCard(4);
+        int[] count = { 0, 0 };
+        Card c0 = getCard(0);
+        Card c1 = getCard(4);
+        for (int i = 0; i < 5; i++) {
+            if (getCard(i).getRank() == c0.getRank())
+                count[0]++;
+            else {
+                c1 = getCard(i);
+                count[1]++;
+            }
+        }
+        if (count[0] == 3)
+            return c0;
+        else
+            return c1;
     }
 
     /**

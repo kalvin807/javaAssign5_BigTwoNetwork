@@ -50,10 +50,12 @@ public class Straight extends Hand {
         if (size() == 5) {
             if (AKQJ10() == true) {
                 return true;
-            }    else {
-                for (int i = 0; i < 5 - 1; i++) {
-                    if (getCard(i).getRank() - getCard(i + 1).getRank() != -1)
+            } else {
+                for (int x = 0; x < 4; x++) {
+                    if ((getCard(x).getRank() - getCard(x + 1).getRank() != -1)
+                            && (getCard(x).getRank() - getCard(x + 1).getRank() != 12)) {
                         return false;
+                    }
                 }
                 return true;
             }

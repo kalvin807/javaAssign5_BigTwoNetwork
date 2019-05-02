@@ -23,13 +23,18 @@ public class StraightFlush extends Hand {
     }
 
     public boolean isValid() {
-        CardGamePlayer temp = super.getPlayer();
-        Straight straight = new Straight(temp, temp.getCardsInHand());
-        Flush flush = new Flush(temp, temp.getCardsInHand());
-        if (straight.isValid() == true && flush.isValid() == true) {
-            return true;
+        if (this.size() != 5)
+            return false;
+        for (int x = 0; x < 4; x++) {
+            if ((getCard(x).getRank() - getCard(x + 1).getRank() != -1)
+                    && (getCard(x).getRank() - getCard(x + 1).getRank() != 12))
+                return false;
         }
-        return false;
+        for (int x = 0; x < 4; x++) {
+            if (getCard(x).getSuit() != getCard(x + 1).getSuit())
+                return false;
+        }
+        return true;
     }
 
     public String getType() {
