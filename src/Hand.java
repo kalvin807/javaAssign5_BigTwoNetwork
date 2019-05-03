@@ -1,4 +1,4 @@
-@SuppressWarnings("serial")
+
 /**
  * The Hand class is a subclass of the CardList class, and is used to model a
  * hand of cards. It has a private instance variable for storing the player who
@@ -9,7 +9,6 @@
 public abstract class Hand extends CardList {
     /** The player who plays this hand */
     private CardGamePlayer player;
-
     /**
      * A constructor for building a hand with the specified player and list of
      * cards.

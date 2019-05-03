@@ -1,11 +1,9 @@
-@SuppressWarnings("serial")
 
 /**
  * A subclass of the Hand class, and are used to model a hand of single in a Big
  * Two card game.
  */
 public class Single extends Hand {
-
     /** A constructor for building a single hand */
     public Single(CardGamePlayer player, CardList cards) {
         super(player, cards);

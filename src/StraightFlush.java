@@ -1,39 +1,40 @@
-@SuppressWarnings("serial")
+
 public class StraightFlush extends Hand {
     public StraightFlush(CardGamePlayer player, CardList cards) {
         super(player, cards);
     }
 
-    public StraightFlush() {
-    }
-
     @Override
     public Card getTopCard() {
-		CardGamePlayer temp = super.getPlayer();
-		Straight straight = new Straight(temp, temp.getCardsInHand());
+        CardGamePlayer temp = super.getPlayer();
+        Straight straight = new Straight(temp, temp.getCardsInHand());
         return straight.getTopCard();
     }
 
     public boolean beats(Hand hand) {
         if (size() == 5) {
             if (hand.getType() == "StraightFlush") {
-                if (this.getTopCard().compareTo(((StraightFlush) hand).getTopCard()) > 0) {
+                if (this.getTopCard().compareTo(((StraightFlush) hand).getTopCard()) > 0)
                     return true;
-                }
-                return false;
             }
+            return true;
         }
         return false;
     }
 
     public boolean isValid() {
-		CardGamePlayer temp = super.getPlayer();
-		Straight straight = new Straight(temp, temp.getCardsInHand());
-		Flush flush = new Flush(temp, temp.getCardsInHand());
-        if ( straight.isValid() == true && flush.isValid() == true) {
-            return true;
+        if (this.size() != 5)
+            return false;
+        for (int x = 0; x < 4; x++) {
+            if ((getCard(x).getRank() - getCard(x + 1).getRank() != -1)
+                    && (getCard(x).getRank() - getCard(x + 1).getRank() != 12))
+                return false;
         }
-        return false;
+        for (int x = 0; x < 4; x++) {
+            if (getCard(x).getSuit() != getCard(x + 1).getSuit())
+                return false;
+        }
+        return true;
     }
 
     public String getType() {

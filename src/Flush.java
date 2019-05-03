@@ -1,10 +1,9 @@
-@SuppressWarnings("serial")
+
 /**
  * A subclass of the Hand class, and are used to model a hand of flush in a Big
  * Two card game.
  */
 public class Flush extends Hand {
-
     /** A constructor for building a flush hand */
     public Flush(CardGamePlayer player, CardList cards) {
         super(player, cards);
@@ -17,14 +16,20 @@ public class Flush extends Hand {
      */
     public boolean beats(Hand hand) {
         if (size() == 5) {
-            if (hand.getType() == "Flush")
-                return super.beats(hand);
-            else if (hand.getType() == "Straight")
+            if (hand.getType() == "Flush") {
+                if (this.getCard(0).getSuit() > hand.getCard(0).getSuit())
+                    return true;
+                else {
+                    if (this.getTopCard().compareTo(hand.getTopCard()) > 0)
+                        ;
+                    return true;
+                }
+            } else if (hand.getType() == "Straight")
                 return true;
             else
                 return false;
-        } else
-            return false;
+        }
+        return false;
     }
 
     /**

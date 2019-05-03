@@ -1,11 +1,10 @@
-@SuppressWarnings("serial")
+
 
 /**
  * A subclass of the Hand class, and are used to model a hand of quad in a Big
  * Two card game.
  */
 public class Quad extends Hand {
-
     /** A constructor for building a quad hand */
     public Quad(CardGamePlayer player, CardList cards) {
         super(player, cards);
@@ -38,8 +37,9 @@ public class Quad extends Hand {
                 if (hand.getType() == "Quad")
                     if (this.getTopCard().compareTo(((Quad) hand).getTopCard()) > 0)
                         return true;
+                return false;
             }
-            return false;
+            return true;
         }
         return false;
     }

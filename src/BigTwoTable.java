@@ -8,8 +8,7 @@ import java.util.ArrayList;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-
-@SuppressWarnings("serial")
+import javax.swing.text.*;
 
 /**
  * The BigTwoTableclass implements the CardGameTable interface. It is used to
@@ -17,7 +16,7 @@ import java.awt.Font;
  */
 public class BigTwoTable implements CardGameTable {
     /** A card game associates with this table */
-    private CardGame game;
+    private BigTwoClient game;
     /** A boolean array indicating which cards are being selected. */
     private boolean[] selected;
     /** An integerspecifying the index of the activeplayer. */
@@ -40,12 +39,22 @@ public class BigTwoTable implements CardGameTable {
      * messages.
      */
     private JTextArea msgArea;
+    /**
+     * A text area for showing chat messages.
+     */
+    private JTextArea inChatArea;
+    /**
+     * A text field to send chat messages.
+     */
+    private JTextField outChatArea;
     /** A 2D array storing the images for the faces of the cards */
     private Image[][] cardImages;
     /** An image for the backs of the cards */
     private Image cardBackImage;
     /** An array storing the images for the avatars. */
     private Image[] avatars;
+    /** A win boolean to show winning screen */
+    public boolean isWin = false;
 
     /**
      * A constructor for creating a BigTwoTable.
@@ -57,6 +66,7 @@ public class BigTwoTable implements CardGameTable {
         initImg();
         layout();
         this.selected = new boolean[13];
+        repaint();
     }
 
     /**
@@ -94,11 +104,12 @@ public class BigTwoTable implements CardGameTable {
 
     /** A method for repainting the GUI. */
     public void repaint() {
-        if (activePlayer > -1) {
-            printMsg(game.getPlayerList().get(activePlayer).getName() + "'s turn:");
-        }
         resetSelected();
         frame.repaint();
+        if (game.getPlayerID() == activePlayer && game.getCurrentIdx() != -1)
+            enable();
+        else
+            disable();
     }
 
     /**
@@ -108,6 +119,10 @@ public class BigTwoTable implements CardGameTable {
      */
     public void printMsg(String msg) {
         msgArea.append(msg + "\n");
+    }
+
+    public void printChatMsg(String msg) {
+        inChatArea.append(msg + "\n");
     }
 
     /** A method for clearing the messagearea of the GUI */
@@ -137,12 +152,43 @@ public class BigTwoTable implements CardGameTable {
         bigTwoPanel.setEnabled(false);
     }
 
+    /** A method to ask user the server ip and the port */
+    public void connectPopup() {
+        String ip = JOptionPane.showInputDialog(frame, "Please input the Server IP.(Default is \"127.0.0.1\")");
+        String port = JOptionPane.showInputDialog(frame, "Please input the Server Port.(Default is \"2396\")");
+        ip = ip.length() != 0 ? ip : "127.0.0.1";
+        port = port.length() != 0 ? ip : "2396";
+        game.setServerIP(ip);
+        game.setServerPort(Integer.parseInt(port));
+    }
+
+    /** A method to ask user the player name */
+    public void playerPopup() {
+        String name = JOptionPane.showInputDialog(frame, "Please input Your name.(Default is \"Player\")");
+        name = name.isEmpty() ? "Player" : name;
+        game.setPlayerName(name);
+    }
+
+    /** A method to show winning popup */
+    public void winPopup() {
+        String title = (activePlayer == game.getPlayerID()) ? "You win" : "You lost";
+        String content = game.getPlayerList().get(activePlayer).getName() + " won!";
+        int status = JOptionPane.showOptionDialog(frame, content, title, JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE, null, null, null);
+        if (status == 0) {
+            reset();
+            repaint();
+            game.sendMessage(new CardGameMessage(CardGameMessage.READY, -1, null));
+        } else {
+            System.exit(0);
+        }
+    }
+
     /**
      * An inner class of Game panel that extends the JPanelclass and implements the
      * MouseListener interface.
      */
     public class BigTwoPanel extends JPanel implements MouseListener {
-
         @Override
         /** Draw the card game table. */
         public void paintComponent(Graphics g) {
@@ -151,11 +197,17 @@ public class BigTwoTable implements CardGameTable {
             g.setColor(Color.WHITE);
             for (int id = 0; id < 4; id++) {
                 CardList temp = game.getPlayerList().get(id).getCardsInHand();
-                g.drawString(game.getPlayerList().get(id).getName(), 24, 27 + id * 120);
+                g.setFont(new Font("default", Font.PLAIN, 12));
+                if (id == activePlayer) {
+                    g.setFont(new Font("default", Font.BOLD, 12));
+                    g.setColor(Color.RED);
+                }
+                g.drawString(game.getPlayerList().get(id).getName(), 8, 27 + id * 120);
+                g.setColor(Color.WHITE);
                 Image image = avatars[id];
                 g.drawImage(image, 5, 30 + id * 120, 85, 97, null);
                 g.drawLine(0, 135 + id * 120, d.width, 135 + id * 120);
-                boolean isActive = (id == activePlayer || activePlayer == -1) ? true : false;
+                boolean isActive = (id == game.getPlayerID() && game.getCurrentIdx() != -1) ? true : false;
                 if (isActive) {
                     for (int i = 0; i < game.getPlayerList().get(id).getCardsInHand().size(); i++) {
                         Image cardImg = cardImages[temp.getCard(i).getRank()][temp.getCard(i).getSuit()];
@@ -179,14 +231,15 @@ public class BigTwoTable implements CardGameTable {
             } else
                 g.drawString("No hand on table", 8, 550);
             // End Game Screen
-            if (game.endOfGame() == true) {
+            if (isWin == true) {
                 Image firework = new ImageIcon(getClass().getResource("imgs/firework.png")).getImage();
                 printMsg(game.getPlayerList().get(activePlayer).getName() + " wins the game!");
                 g.drawImage(firework, 100, 100, 200, 200, null);
                 g.drawImage(firework, 200, 400, 150, 150, null);
                 g.drawImage(firework, 300, 200, 200, 200, null);
                 g.setFont(new Font("default", Font.BOLD, 16));
-                g.drawString("You win the game!", 250, 80 + activePlayer * 120);
+                g.drawString(game.getPlayerList().get(activePlayer).getName() + " win the game!", 250,
+                        80 + activePlayer * 120);
             }
         }
 
@@ -198,7 +251,6 @@ public class BigTwoTable implements CardGameTable {
             int r2 = 30 + 97 + activePlayer * 120;
             int size = game.getPlayerList().get(activePlayer).getNumOfCards();
             int y1;
-            printMsg(x + " " + y);
             if (y >= r1 && y <= r2) {
                 for (int i = (size - 1); i > -1; i--) {
                     if (x >= 120 + 25 * i && x <= 120 + 25 * i + 72) {
@@ -273,14 +325,10 @@ public class BigTwoTable implements CardGameTable {
      * An inner class that implements the ActionListenerinterface to "Restart" Menu
      * item.
      */
-    public class RestartMenuItemListener implements ActionListener {
+    public class ConnectMenuItemListener implements ActionListener {
         /** Handle menu-item-click events for the “Restart” menu item */
         public void actionPerformed(ActionEvent e) {
-            disable();
-            reset();
-            BigTwoDeck deck = new BigTwoDeck();
-            deck.shuffle();
-            game.start(deck);
+            game.makeConnection();
         }
     }
 
@@ -288,13 +336,23 @@ public class BigTwoTable implements CardGameTable {
      * An inner class that implements the ActionListenerinterface to "Quit" Menu
      * item
      */
-
     public class QuitMenuItemListener implements ActionListener {
         /** Handle menu-item-click events for the “Quit” menu item */
         public void actionPerformed(ActionEvent e) {
             System.exit(0);
         }
+    }
 
+    /**
+     * An inner class that implements the ActionListenerinterface to send message.
+     */
+    public class EnterListener implements ActionListener {
+        /** Handle menu-item-click events for the “Quit” menu item */
+        public void actionPerformed(ActionEvent e) {
+            String msg = outChatArea.getText();
+            game.sendMessage(new CardGameMessage(CardGameMessage.MSG, -1, msg));
+            outChatArea.setText("");
+        }
     }
 
     // A method to initiate images
@@ -330,13 +388,13 @@ public class BigTwoTable implements CardGameTable {
         JMenuBar menuBar = new JMenuBar();
         JMenu gameMenu = new JMenu("Game");
         menuBar.add(gameMenu);
-        JMenuItem restartMenuItem = new JMenuItem("Restart");
-        RestartMenuItemListener reLtr = new RestartMenuItemListener();
-        restartMenuItem.addActionListener(reLtr);
+        JMenuItem connectMenuItem = new JMenuItem("Connect");
+        ConnectMenuItemListener conLtr = new ConnectMenuItemListener();
+        connectMenuItem.addActionListener(conLtr);
         JMenuItem quitMenuItem = new JMenuItem("Quit");
         QuitMenuItemListener quitLtr = new QuitMenuItemListener();
         quitMenuItem.addActionListener(quitLtr);
-        gameMenu.add(restartMenuItem);
+        gameMenu.add(connectMenuItem);
         gameMenu.add(quitMenuItem);
         // bigTwoPanel
         bigTwoPanel = new BigTwoPanel();
@@ -350,15 +408,34 @@ public class BigTwoTable implements CardGameTable {
         btnPanel.add(playButton);
         btnPanel.add(passButton);
         // MsgArea
-        this.msgArea = new JTextArea(20, 30);
+        this.msgArea = new JTextArea(25, 25);
         msgArea.setEditable(false);
         msgArea.setLineWrap(true);
+        DefaultCaret chatcaret = (DefaultCaret) msgArea.getCaret();
+        chatcaret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         JScrollPane scrollMsg = new JScrollPane(msgArea, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        // inChatArea
+        this.inChatArea = new JTextArea(15, 25);
+        inChatArea.setEditable(false);
+        inChatArea.setLineWrap(true);
+        inChatArea.setWrapStyleWord(true);
+        JScrollPane scrollChat = new JScrollPane(inChatArea, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        // outChatArea
+        this.outChatArea = new JTextField(5);
+        EnterListener enter = new EnterListener();
+        outChatArea.addActionListener(enter);
+        // msgPanel
+        JPanel msgPanel = new JPanel();
+        msgPanel.setLayout(new BoxLayout(msgPanel, BoxLayout.Y_AXIS));
+        msgPanel.add(scrollMsg);
+        msgPanel.add(scrollChat);
+        msgPanel.add(outChatArea);
         // Frame
         frame.add(menuBar, BorderLayout.NORTH);
         frame.add(bigTwoPanel, BorderLayout.CENTER);
-        frame.add(scrollMsg, BorderLayout.EAST);
+        frame.add(msgPanel, BorderLayout.EAST);
         frame.add(btnPanel, BorderLayout.SOUTH);
         frame.pack();
         frame.setVisible(true);

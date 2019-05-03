@@ -1,10 +1,9 @@
-@SuppressWarnings("serial")
+
 /**
  * A subclass of the Hand class, and are used to model a hand of triple in a
  * Big Two card game.
  */
 public class Triple extends Hand {
-    
     /** A constructor for building a triple hand */
     public Triple(CardGamePlayer player, CardList cards) {
         super(player, cards);

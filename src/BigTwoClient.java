@@ -11,7 +11,7 @@ public class BigTwoClient implements CardGame, NetworkGame {
     /** A list of hands played on table. */
     private ArrayList<Hand> handsOnTable = new ArrayList<Hand>();
     /** An integer specifying the index of the current player. */
-    private int currentIdx;
+    private int currentIdx = -1;
     /** An integer specifying the number of players. */
     private int numOfPlayers;
     /** An integer specifying the playerID (i.e., index) of the local player. */
@@ -23,7 +23,7 @@ public class BigTwoClient implements CardGame, NetworkGame {
     /** An integer specifying the TCP port of the game server. */
     private int serverPort;
     /** A socket connection to the game server */
-    private Socket sock;
+    private Socket sock = new Socket();
     /** An ObjectOutputStream for sending messages to the server */
     private ObjectOutputStream oos;
     /**
@@ -40,6 +40,7 @@ public class BigTwoClient implements CardGame, NetworkGame {
     public BigTwoClient() {
         for (int i = 0; i < 4; i++) {
             CardGamePlayer player = new CardGamePlayer();
+            player.setName("Not Connected");
             playerList.add(player);
             numOfPlayers++;
 
@@ -93,65 +94,113 @@ public class BigTwoClient implements CardGame, NetworkGame {
         return currentIdx;
     }
 
+    /**
+     * A method for getting the playerID (i.e., index) of the local player.
+     * 
+     * @return Int of the player ID
+     */
     public int getPlayerID() {
         return playerID;
     }
 
+    /**
+     * A method for setting the playerID
+     * 
+     * @param playerID Int of the player ID
+     */
     public void setPlayerID(int playerID) {
         this.playerID = playerID;
     }
 
+    /**
+     * A method for getting the name of the local player
+     * 
+     * @return String of the player name
+     */
     public String getPlayerName() {
         return playerName;
     }
 
+    /**
+     * A method for setting the name of the local player.
+     * 
+     * @param name String of the player name
+     */
     public void setPlayerName(String name) {
         this.playerName = name;
     }
 
+    /**
+     * A method for getting the IP address of the game server
+     * 
+     * @retrun String of the server IP.
+     */
     public String getServerIP() {
         return serverIP;
     }
 
+    /**
+     * A method for setting the IP address of the game server
+     * 
+     * @param serverIP String of the server IP
+     */
     public void setServerIP(String serverIP) {
         this.serverIP = serverIP;
     }
 
+    /**
+     * A method for getting the TCP port of the game server
+     * 
+     * @return Int of the server port
+     */
     public int getServerPort() {
         return serverPort;
     }
 
+    /**
+     * A method for setting the TCP port of the game server.
+     * 
+     * @param severPort int of the port number
+     */
     public void setServerPort(int serverPort) {
         this.serverPort = serverPort;
     }
 
+    /** A method for making a socket connection with the game server */
     public void makeConnection() {
-        this.serverIP = "127.0.0.1";
-        this.serverPort = 2396;
-        try {
-            this.sock = new Socket(serverIP, serverPort);
-        } catch (Exception e) {
-            e.printStackTrace();
-            table.printMsg("Failed to create Socket");
+        if (!sock.isConnected()) {
+            table.connectPopup();
+            table.playerPopup();
+            try {
+                this.sock = new Socket(serverIP, serverPort);
+            } catch (Exception e) {
+                e.printStackTrace();
+                table.printMsg("Failed to connect to " + serverIP + ":" + serverPort);
+            }
+            try {
+                oos = new ObjectOutputStream(sock.getOutputStream());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            Thread threadedServer = new Thread(new ServerHandler(sock));
+            threadedServer.start();
+            sendMessage(new CardGameMessage(CardGameMessage.JOIN, -1, getPlayerName()));
+            sendMessage(new CardGameMessage(CardGameMessage.READY, -1, null));
+            table.repaint();
         }
-        try {
-            oos = new ObjectOutputStream(sock.getOutputStream());
-        } catch (Exception e) {
-            e.printStackTrace();
-            table.printMsg("Failed to create OOS");
-        }
-        Thread threadedServer = new Thread(new ServerHandler(sock));
-        threadedServer.start();
-        sendMessage(new CardGameMessage(CardGameMessage.JOIN, -1, getPlayerName()));
-        sendMessage(new CardGameMessage(CardGameMessage.READY, -1, null));
     }
 
+    /**
+     * A method for parsing the messages received from the game server
+     * 
+     * @param message GameMessage Object
+     */
     public synchronized void parseMessage(GameMessage message) {
         switch (message.getType()) {
         case CardGameMessage.PLAYER_LIST:
             setPlayerID(message.getPlayerID());
             for (int i = 0; i < ((String[]) message.getData()).length; i++) {
-                String name = ((String[]) message.getData())[i] == null ? "Player " + (i + 1)
+                String name = ((String[]) message.getData())[i] == null ? "Empty"
                         : ((String[]) message.getData())[i];
                 playerList.get(i).setName(name);
             }
@@ -160,29 +209,32 @@ public class BigTwoClient implements CardGame, NetworkGame {
         case CardGameMessage.JOIN:
             playerList.get(message.getPlayerID()).setName((String) message.getData());
             table.repaint();
-            table.printMsg((String) message.getData() + "joined the game.");
+            table.printMsg((String) message.getData() + " joined the game.");
             break;
         case CardGameMessage.FULL:
-            table.printMsg("Server is currently FULLED");
+            table.printMsg("Server is currently full.");
             break;
         case CardGameMessage.QUIT:
-            table.printMsg(playerList.get(message.getPlayerID()).getName() + "left the game.");
+            table.printMsg(playerList.get(message.getPlayerID()).getName() + " left the game.");
             playerList.get(message.getPlayerID()).setName("");
             table.repaint();
             if (!endOfGame()) {
-                table.disable();
+                currentIdx = -1;
                 sendMessage(new CardGameMessage(4, -1, null));
+                table.repaint();
             }
             break;
         case CardGameMessage.READY:
-            table.printMsg(playerList.get(message.getPlayerID()).getName() + "is ready.");
+            table.printMsg(playerList.get(message.getPlayerID()).getName() + " is ready.");
             break;
         case CardGameMessage.START:
-            table.printMsg("##Game Start##");
+            table.printMsg("All players are ready. Game Start!");
+            table.isWin= false;
             start((BigTwoDeck) message.getData());
             break;
         case CardGameMessage.MOVE:
             checkMove(message.getPlayerID(), (int[]) message.getData());
+            table.repaint();
             break;
         case CardGameMessage.MSG:
             table.printChatMsg((String) message.getData());
@@ -190,6 +242,11 @@ public class BigTwoClient implements CardGame, NetworkGame {
         }
     }
 
+    /**
+     * A method for sending the specified message to the game server
+     * 
+     * @param message GameMessage Object
+     */
     public void sendMessage(GameMessage message) {
         try {
             oos.writeObject(message);
@@ -200,9 +257,11 @@ public class BigTwoClient implements CardGame, NetworkGame {
         }
     }
 
+    /** An inner class that implements the Runnable interface. */
     class ServerHandler implements Runnable {
         private ObjectInputStream ois;
 
+        /** A constructor for creating a ServerHandler */
         ServerHandler(Socket sock) {
             try {
                 ois = new ObjectInputStream(sock.getInputStream());
@@ -211,6 +270,7 @@ public class BigTwoClient implements CardGame, NetworkGame {
             }
         }
 
+        /** A method to create a thread with an instance of this class */
         public void run() {
             CardGameMessage message;
             try {
@@ -231,8 +291,7 @@ public class BigTwoClient implements CardGame, NetworkGame {
         CardGamePlayer currentPlayer = null;
         Card diamond3 = new Card(0, 2);
         // Clear the GUI
-        table.disable();
-        table.clearMsgArea();
+        table.reset();
         // Remove all cards
         handsOnTable.clear();
         for (int i = 0; i < playerList.size(); i++)
@@ -249,9 +308,11 @@ public class BigTwoClient implements CardGame, NetworkGame {
         for (int i = 0; i < playerList.size(); i++)
             playerList.get(i).sortCardsInHand();
         // Refresh GUI
+        isFirst = true;
+        passCounter = 0;
         table.setActivePlayer(currentIdx);
         table.printMsg(" Player " + currentIdx + "'s turn:");
-        table.enable();
+        table.repaint();
     }
 
     /**
@@ -264,7 +325,7 @@ public class BigTwoClient implements CardGame, NetworkGame {
     public void makeMove(int playerID, int[] cardIdx) {
         CardGameMessage message = new CardGameMessage(CardGameMessage.MOVE, -1, cardIdx);
         sendMessage(message);
-    }   
+    }
 
     /**
      * A method for checking a move made by a player.
@@ -321,12 +382,10 @@ public class BigTwoClient implements CardGame, NetworkGame {
             if (isFirst == true)
                 table.printMsg("Player " + currentIdx + " is the First player.");
             table.setActivePlayer(currentIdx);
-        } else {
-            if (hand == null)
-                table.printMsg("Not a legal move!!!");
-            else
-                table.printMsg("{" + hand.getType() + "} " + hand.toString() + " <== Not a legal move!!!");
-        }
+        } else
+            table.printMsg("Not a legal move!!!");
+        table.printMsg(getPlayerList().get(currentIdx).getName() + "'s turn:");
+        table.isWin = endOfGame() ? true : false;
     }
 
     /**
@@ -335,10 +394,14 @@ public class BigTwoClient implements CardGame, NetworkGame {
      * @return Boolean value of the game end status
      */
     public boolean endOfGame() {
-        for (int i = 0; i < 4; i++) {
-            if (playerList.get(i).getNumOfCards() == 0) {
-                table.setActivePlayer(i);
-                return true;
+        if (currentIdx != -1) {
+            for (int i = 0; i < 4; i++) {
+                if (playerList.get(i).getNumOfCards() == 0) {
+                    table.setActivePlayer(i);
+                    table.repaint();
+                    table.winPopup();
+                    return true;
+                }
             }
         }
         return false;
